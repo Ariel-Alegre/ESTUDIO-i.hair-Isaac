@@ -1,24 +1,30 @@
 import React from 'react';
-import { FlatList, View, Text, StyleSheet } from 'react-native';
+import { FlatList, View, StyleSheet, ListRenderItem } from 'react-native';
 import CardCarousel from '../components/CardCarousel'; // Asegúrate de importar correctamente
 import RecentlyViewedCarousel from '../components/RecentlyViewedCarousel'; // Asegúrate de importar correctamente
-import CardNewCarousel from '../components/CardNewCarousel';
-import TrendCarousel from '../components/TrendCarousel';
-import FilterCategory from '../components/FilterCategory';
 
-const HomeScreen = () => {
-  const data = [
+// Definir el tipo para los elementos de la lista
+interface DataItem {
+  key: string;
+  component: JSX.Element; // Usamos JSX.Element para los componentes React
+}
+
+const HomeScreen: React.FC = () => {
+  const data: DataItem[] = [
     { key: 'recentlyViewed', component: <RecentlyViewedCarousel /> },
     { key: 'cardCarousel', component: <CardCarousel /> },
-    { key: 'cardNewCarousel', component: <CardNewCarousel /> },
-    { key: 'trendCarousel', component: <TrendCarousel /> },
-    { key: 'filterCategory', component: <FilterCategory /> },
+    // Si agregas más componentes, asegúrate de que estén correctamente tipados.
   ];
+
+  // Renderizar el item de la lista
+  const renderItem: ListRenderItem<DataItem> = ({ item }) => (
+    <View>{item.component}</View>
+  );
 
   return (
     <FlatList
       data={data}
-      renderItem={({ item }) => item.component}
+      renderItem={renderItem}
       keyExtractor={(item) => item.key}
       style={styles.container}
     />
@@ -27,7 +33,7 @@ const HomeScreen = () => {
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: "#fff"
+    backgroundColor: "#fff",
   },
 });
 

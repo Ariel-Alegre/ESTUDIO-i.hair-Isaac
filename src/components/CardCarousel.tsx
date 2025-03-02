@@ -18,7 +18,7 @@ const carouselData: CardData[] = [
   {
     id: 1,
     title: 'Recomendado',
-    businessName: 'Monasterio Barbería',
+    businessName: 'Extension pestañas',
     rating: 4.5,
     type: 'Barbería',
     address: 'Av. Principal 123, Ciudad A',
@@ -27,7 +27,7 @@ const carouselData: CardData[] = [
   {
     id: 2,
     title: 'Recientemente Visto',
-    businessName: 'Sofia Serazin Beauty Studio ',
+    businessName: 'Depilación',
     rating: 3.5,
     type: 'Salón de Belleza',
     address: 'Calle Secundaria 456, Ciudad B',
@@ -36,7 +36,7 @@ const carouselData: CardData[] = [
   {
     id: 3,
     title: 'Tendencia',
-    businessName: 'Hello Lashes',
+    businessName: 'Microblading',
     rating: 5.0,
     type: 'Cejas y Pestañas',
     address: 'Plaza Central 789, Ciudad C',
@@ -62,7 +62,7 @@ const CardCarousel = () => {
         <Text style={styles.cardTitle} numberOfLines={1} ellipsizeMode="tail">
           {item.businessName}
         </Text>
-        <Text style={styles.cardRating}>⭐ {item.rating}</Text>
+       {/*  <Text style={styles.cardRating}>{item.rating}</Text> */}
         <Text style={styles.cardAddress}>{item.address}</Text>
         <Text style={styles.cardSubtitle}>{item.type}</Text>
       </View>
@@ -71,7 +71,7 @@ const CardCarousel = () => {
 
   return (
     <View style={styles.carouselContainer}>
-      <Text style={styles.sectionTitle}>Recomendados</Text>
+      <Text style={styles.sectionTitle}>Cabina</Text>
       <FlatList
         data={carouselData}
         renderItem={renderItem}
@@ -124,11 +124,13 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     marginBottom: 5,
     color: '#222',
+
   },
   cardRating: {
     fontSize: 14,
     color: '#444',
     marginBottom: 5,
+
   },
   cardAddress: {
     fontSize: 12,
@@ -137,12 +139,13 @@ const styles = StyleSheet.create({
   },
   cardSubtitle: {
     fontSize: 13,
-    paddingVertical: 4,
+    paddingVertical: 10,
     paddingHorizontal: 10,
     backgroundColor: '#f2f2f2',
     borderRadius: 6,
     alignSelf: 'flex-start',
     color: '#555',
+    
   },
   flatListContent: {
     paddingBottom: 20,

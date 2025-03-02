@@ -1,15 +1,56 @@
-import React, { useState } from "react";
-import { View, Text, Image, TouchableOpacity, ScrollView, Animated   } from "react-native";
+import React, { useState, useEffect } from "react";
+import { View, Text, Image, TouchableOpacity, ScrollView, Animated } from "react-native";
 import MapView, { Marker } from 'react-native-maps';
 import Icon from "react-native-vector-icons/Ionicons";
 import { useNavigation } from "@react-navigation/native"; // Importa useNavigation
+import axios from 'axios'; // Asegúrate de tener instalado axios
+import { useRoute } from "@react-navigation/native";
+interface CardData {
+  id: string;
+  nombre: string;
+  direccion: string;
+  imagen: string;
+  tipo: string;
+  precios: Array<{ categoria: string, servicio: string, precio: string }>; // O precios: { categoria: string }[]
+  rating: number;
+  horario: Array<{ apertura: string, cierre:string, dia:string, estado: string }>
+  teams: Array<{ imagen: string, nombre: string, puesto: string }>
+}
+
 const SalonDetails = () => {
+  const route = useRoute();
+  const { idBussiness } = route.params as { idBussiness: string };
+
   const [selectedCategory, setSelectedCategory] = useState("Destacados");
   const navigation = useNavigation(); // Obtén el objeto de navegación
-  
+  const [businessDetails, setBusinessDetails] = useState<CardData | null>(null); // Cambié esto a null inicialmente
+  console.log(businessDetails);
+
   const goBack = () => {
     navigation.goBack(); // Vuelve a la pantalla anterior
   };
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const response = await axios.get(`https://panel-estudio-production.up.railway.app/api/one-bussiness/${idBussiness}`);
+        setBusinessDetails(response.data.data); // Aquí actualizas el estado con el negocio obtenido
+      } catch (error) {
+        console.error('Error al obtener los negocios:', error);
+      }
+    };
+
+    if (idBussiness) {
+      fetchData(); // Llama a fetchData solo si existe un ID
+    }
+  }, [idBussiness]);
+
+  if (!businessDetails) {
+    return (
+      <View style={{margin: "auto", height:"auto"}}>
+        <Text>Cargando detalles...</Text>
+      </View>
+    ); // Muestra un mensaje mientras esperas la respuesta
+  }
 
   const handleShare = () => {
     console.log("Compartir");
@@ -23,24 +64,7 @@ const SalonDetails = () => {
 
   // Servicios según la categoría seleccionada
 
-  const servicesByCategory = {
-    Destacados: [
-      { name: "Manicure Natural", duration: "15 min - 25 min", price: "US$ 8" },
-      { name: "Corte de Cabello", duration: "30 min", price: "US$ 12" },
-    ],
-    PROMOS: [
-      { name: "Peinado + Maquillaje", duration: "45 min", price: "US$ 20" },
-      { name: "Combo Manicure + Pedicure", duration: "1h", price: "US$ 15" },
-    ],
-    Rostro: [
-      { name: "Limpieza Facial", duration: "45 min", price: "US$ 18" },
-      { name: "Depilación de Cejas", duration: "20 min", price: "US$ 5" },
-    ],
-    Cabello: [
-      { name: "Tinte Completo", duration: "1h 30min", price: "US$ 30" },
-      { name: "Tratamiento Capilar", duration: "45 min", price: "US$ 25" },
-    ],
-  };
+
 
   // Equipo del salón
   const teamMembers = [
@@ -71,10 +95,9 @@ const SalonDetails = () => {
     longitudeDelta: 0.0421,
   };
 
-
   return (
     <ScrollView style={{ flex: 1, backgroundColor: "#fff" }}>
-          <TouchableOpacity
+      <TouchableOpacity
         style={{
           position: "absolute",
           top: 80,
@@ -90,6 +113,7 @@ const SalonDetails = () => {
       </TouchableOpacity>
 
       {/* Botón de compartir en la esquina superior derecha */}
+      {/*  
       <TouchableOpacity
         style={{
           position: "absolute",
@@ -103,9 +127,10 @@ const SalonDetails = () => {
         onPress={handleShare}
       >
         <Icon name="share-social" size={20} color="grey" />
-      </TouchableOpacity>
+      </TouchableOpacity> */}
 
-           {/* Botón de añadir a favoritos en la esquina superior derecha */}
+      {/* Botón de añadir a favoritos en la esquina superior derecha */}
+      {/*  
            <TouchableOpacity
         style={{
           position: "absolute",
@@ -120,44 +145,53 @@ const SalonDetails = () => {
       >
         <Icon name="heart" size={20} color="grey" />
       </TouchableOpacity>
+      */}
       {/* Imagen de fondo */}
-      <Image
-        source={{
-          uri: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRcUef7cWD3uLU_G3k7Zbab66K4XFHObja2kw&s",
-        }}
-        style={{ width: "100%", height: 312 }}
-      />
+      <View >
+
+        <Image
+          source={{
+            uri: businessDetails.imagen[0],
+          }}
+          style={{ width: "100%", height: 312 }}
+        />
+      </View>
 
       {/* Información del salón */}
       <View style={{ padding: 20 }}>
-        <Text style={{ fontSize: 22, fontWeight: "bold" }}>OKO - Belleza con Propósito</Text>
-        <Text style={{ fontSize: 16, color: "gray" }}>4.7 ⭐ (40)</Text>
-        <Text style={{ fontSize: 14, color: "gray", marginTop: 5 }}>{">"}50 km • Puembo, Quito</Text>
-        <Text style={{ fontSize: 14, color: "gray", marginTop: 5 }}>Cerrado, abre pronto a las 8:00 a.m.</Text>
+        <Text style={{ fontSize: 22, fontWeight: "bold" }}>{businessDetails.nombre}</Text>
+        {/* <Text style={{ fontSize: 16, color: "gray" }}>4.7 ⭐ (40)</Text> */}
+        <Text style={{ fontSize: 14, color: "gray", marginTop: 5 }}>{businessDetails.direccion}</Text>
+        <Text style={{ fontSize: 14, color: "gray", marginTop: 5 }}>abre a las {businessDetails.horario[0].apertura} am</Text>
       </View>
 
       {/* Categorías de servicios */}
-      <View style={{ flexDirection: "row", paddingHorizontal: 20, marginBottom: 10 }}>
-        {["Destacados", "PROMOS", "Rostro", "Cabello"].map((category, index) => (
-          <TouchableOpacity
-            key={index}
-            style={{
-              marginRight: 10,
-              padding: 8,
-              borderRadius: 10,
-              backgroundColor: selectedCategory === category ? "black" : "#eee",
-            }}
-            onPress={() => setSelectedCategory(category)}
-          >
-            <Text style={{ color: selectedCategory === category ? "white" : "black" }}>{category}</Text>
-          </TouchableOpacity>
-        ))}
+      <View style={{ flexDirection: 'row', paddingHorizontal: 20, marginBottom: 10 }}>
+        {businessDetails?.precios.length > 0 ? (
+          businessDetails?.precios.map((category, index) => (
+            <TouchableOpacity
+              key={index}
+              style={{
+                marginRight: 10,
+                padding: 8,
+                borderRadius: 10,
+                backgroundColor: selectedCategory === category.categoria ? 'black' : '#eee',
+              }}
+              onPress={() => setSelectedCategory(category.categoria)} // Cambia el estado al hacer clic
+            >
+              <Text style={{ color: selectedCategory === category.categoria ? 'white' : 'black' }}>
+                {category.categoria} {/* Asegúrate de que la propiedad sea correcta */}
+              </Text>
+            </TouchableOpacity>
+          ))
+        ) : (
+          <Text>No hay categorías disponibles</Text>
+        )}
       </View>
-
       {/* Servicios */}
       <View style={{ paddingHorizontal: 20 }}>
         <Text style={{ fontSize: 18, fontWeight: "bold", marginBottom: 10 }}>Servicios</Text>
-        {servicesByCategory[selectedCategory].map((service, index) => (
+        {businessDetails?.precios.map((service, index) => (
           <View
             key={index}
             style={{
@@ -170,12 +204,12 @@ const SalonDetails = () => {
             }}
           >
             <View>
-              <Text style={{ fontSize: 16, fontWeight: "bold" }}>{service.name}</Text>
-              <Text style={{ fontSize: 14, color: "gray" }}>{service.duration}</Text>
-              <Text style={{ fontSize: 14, color: "black", marginTop: 5 }}>desde {service.price}</Text>
+              <Text style={{ fontSize: 16, fontWeight: "bold" }}>{service.servicio}</Text>
+              {/*  <Text style={{ fontSize: 14, color: "gray" }}>{service.duration}</Text> */}
+              <Text style={{ fontSize: 14, color: "black", marginTop: 5 }}>desde ${service.precio}</Text>
             </View>
             <TouchableOpacity >
-              <Text style={{ color: "white", backgroundColor: "black", padding: 10, borderRadius: 5  }}>Reservar</Text>
+              <Text style={{ color: "white", backgroundColor: "black", padding: 10, borderRadius: 5 }}>Reservar</Text>
             </TouchableOpacity>
           </View>
         ))}
@@ -183,54 +217,54 @@ const SalonDetails = () => {
 
       {/* Sección de equipo */}
       <View style={{ paddingHorizontal: 20, marginTop: 20 }}>
-      <View  style={{ flexDirection: "row", flexWrap: "wrap", justifyContent: "space-between" }}>
+        <View style={{ flexDirection: "row", flexWrap: "wrap", justifyContent: "space-between" }}>
 
 
-  <Text style={{ fontSize: 18, fontWeight: "bold", marginBottom: 10 }}>Nuestro Equipo</Text>
-  {/* Botón Ver Todo */}
-  <TouchableOpacity 
-    style={{
-        marginTop: 10,
-        borderRadius: 10,
-        alignItems: "center",
-    }}
-    onPress={() => console.log("Ver todo presionado")} // Aquí puedes abrir una pantalla nueva
-    >
-    <Text style={{ color: "black", fontSize: 16 , textDecorationLine: "underline"}}>Ver Todo</Text>
-  </TouchableOpacity>
-</View>
-  {/* Contenedor en filas de 3 */}
-  <View style={{ flexDirection: "row", flexWrap: "wrap", justifyContent: "space-between" }}>
-    {teamMembers.slice(0, 6).map((member, index) => ( // Muestra solo los primeros 6
-      <View
-        key={index}
-        style={{
-          width: "32%",
-          alignItems: "center",
-          padding: 10,
-          borderRadius: 10,
-          marginBottom: 10,
-        }}
-      >
-        <Image
-          source={{ uri: member.image }}
-          style={{ width: 70, height: 70, borderRadius: 35, marginBottom: 5 }}
-        />
-        <Text style={{ fontSize: 14, fontWeight: "bold", textAlign: "center" }}>{member.name}</Text>
-        <Text style={{ fontSize: 12, color: "gray", textAlign: "center" }}>{member.role}</Text>
+          <Text style={{ fontSize: 18, fontWeight: "bold", marginBottom: 10 }}>Nuestro Equipo</Text>
+          {/* Botón Ver Todo */}
+          <TouchableOpacity
+            style={{
+              marginTop: 10,
+              borderRadius: 10,
+              alignItems: "center",
+            }}
+            onPress={() => console.log("Ver todo presionado")} // Aquí puedes abrir una pantalla nueva
+          >
+            <Text style={{ color: "black", fontSize: 16, textDecorationLine: "underline" }}>Ver Todo</Text>
+          </TouchableOpacity>
+        </View>
+        {/* Contenedor en filas de 3 */}
+        <View style={{ flexDirection: "row", flexWrap: "wrap", justifyContent: "space-between" }}>
+          {businessDetails.teams.slice(0, 6).map((member, index) => ( // Muestra solo los primeros 6
+            <View
+              key={index}
+              style={{
+                width: "32%",
+                alignItems: "center",
+                padding: 10,
+                borderRadius: 10,
+                marginBottom: 10,
+              }}
+            >
+              <Image
+                source={{ uri: member.imagen }}
+                style={{ width: 70, height: 70, borderRadius: 35, marginBottom: 5 }}
+              />
+              <Text style={{ fontSize: 14, fontWeight: "bold", textAlign: "center" }}>{member.nombre}</Text>
+              <Text style={{ fontSize: 12, color: "gray", textAlign: "center" }}>{member.puesto}</Text>
+            </View>
+          ))}
+        </View>
+
+
       </View>
-    ))}
-  </View>
 
-
-</View>
-
-  {/* Reseñas*/}
-
+      {/* Reseñas*/}
+      {/*
 <View style={{ paddingHorizontal: 20, marginTop: 20 }}>
   <Text style={{ fontSize: 18, fontWeight: "bold", marginBottom: 10 }}>Reseñas</Text>
 
-  {/* Contenedor de reseñas en filas de 2 */}
+  {/* Contenedor de reseñas en filas de 2 
   <View style={{ flexDirection: "row", flexWrap: "wrap", justifyContent: "space-between" }}>
     {reviews.slice(0, 4).map((review, index) => ( // Muestra solo las primeras 4
       <View
@@ -256,10 +290,10 @@ const SalonDetails = () => {
         <Text style={{ fontSize: 12, color: "black" }} numberOfLines={3}>{review.comment}</Text>
       </View>
     ))}
-  </View>
+  </View> */}
 
-  {/* Botón Ver Todo */}
-  <TouchableOpacity
+      {/* Botón Ver Todo */}
+      {/* <TouchableOpacity
   style={{
     marginTop: 10,
     backgroundColor: "white",  // Fondo blanco
@@ -273,50 +307,52 @@ const SalonDetails = () => {
 >
   <Text style={{ color: "black", fontSize: 16, fontWeight: "bold" }}>Ver todo</Text>
 </TouchableOpacity>
-
 </View>
-<View style={{ paddingHorizontal: 20, marginTop: 20 }}>
-      <Text style={{ fontSize: 18, fontWeight: "bold", marginBottom: 10 }}>Horarios de Apertura</Text>
+ */}
+      <View style={{ paddingHorizontal: 20, marginTop: 20 }}>
+        <Text style={{ fontSize: 18, fontWeight: "bold", marginBottom: 10 }}>Horarios de Apertura</Text>
 
-      {horarios.map((horario, index) => (
-        <View key={index} style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 10 }}>
-          <Text style={{ fontSize: 16, color: 'black', flex: 1 }}>
-            {horario.dia}: {horario.hora}
-          </Text>
-          
-          <View 
-            style={{
-              width: 10,
-              height: 10,
-              borderRadius: 5,
-              backgroundColor: horario.abierto ? 'green' : 'gray',
-              marginLeft: 10
-            }}
-          />
-        </View>
-      ))}
-    </View>
+        {businessDetails.horario.map((horarios, index) => (
+          <View key={index} style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 10 }}>
+            <Text style={{ fontSize: 16, color: 'black', flex: 1, }}>
+            
+            {horarios.dia}: {horarios.apertura} AM - {horarios.cierre} PM
+            </Text> 
 
-    <View style={{ paddingHorizontal: 20, marginTop: 20 }}>
-      <Text style={{ fontSize: 18, fontWeight: "bold", marginBottom: 10 }}>Información Adicional</Text>
-      
-      <Text style={{ fontSize: 16, color: 'black', marginBottom: 10 }}>
-        Dirección: Calle Ficticia 123, Ciudad, País
-      </Text>
-      
-      <Text style={{ fontSize: 16, color: 'black', marginBottom: 20 }}>
-        Nuestro restaurante está ubicado en una zona céntrica de la ciudad, de fácil acceso y cerca de los principales puntos de interés. 
-        Te esperamos para ofrecerte la mejor experiencia gastronómica.
-      </Text>
+            <View
+              style={{
+                width: 10,
+                height: 10,
+                borderRadius: 5,
+                backgroundColor: horarios.estado === "abierto" ? 'green' : 'gray',
+                marginLeft: 10
+              }}
+            />
 
-      {/* Mapa con la ubicación del restaurante */}
-      <MapView
-        style={{ height: 250, width: '100%' }}
-        initialRegion={region}
-      >
-        <Marker coordinate={region} title="Restaurante" description="Aquí estamos." />
-      </MapView>
-    </View>
+          </View>
+        ))}
+      </View>
+
+      <View style={{ paddingHorizontal: 20, marginTop: 20 }}>
+        <Text style={{ fontSize: 18, fontWeight: "bold", marginBottom: 10 }}>Información Adicional</Text>
+
+        <Text style={{ fontSize: 16, color: 'black', marginBottom: 10 }}>
+          Dirección: Calle Ficticia 123, Ciudad, País
+        </Text>
+
+        <Text style={{ fontSize: 16, color: 'black', marginBottom: 20 }}>
+          Nuestro restaurante está ubicado en una zona céntrica de la ciudad, de fácil acceso y cerca de los principales puntos de interés.
+          Te esperamos para ofrecerte la mejor experiencia gastronómica.
+        </Text>
+
+        {/* Mapa con la ubicación del restaurante */}
+        <MapView
+          style={{ height: 250, width: '100%' }}
+          initialRegion={region}
+        >
+          <Marker coordinate={region} title="Restaurante" description="Aquí estamos." />
+        </MapView>
+      </View>
       {/* Botón de reservar */}
       <View style={{ padding: 20 }}>
         <TouchableOpacity

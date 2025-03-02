@@ -31,10 +31,12 @@ const CategoryList: React.FC = () => {
 
   const renderItem = ({ item }: { item: Category }) => (
     <TouchableOpacity style={styles.categoryItem} onPress={() => onSelectCategory(item)}>
+      {/* Asegúrate de que el texto esté dentro de <Text> */}
       <Text style={styles.text}>{item.name}</Text>
       <Image source={{ uri: item.image }} style={styles.image} />
     </TouchableOpacity>
   );
+  
 
   return (
     <View style={styles.container}>

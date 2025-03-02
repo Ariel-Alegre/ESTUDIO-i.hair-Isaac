@@ -63,6 +63,7 @@ const AppNavigator: React.FC = () => {
          <Tab.Screen
           name="Details"
           component={SalonDetails} // Asegúrate de que este componente esté importado correctamente
+          initialParams={{ idBussiness: null }} 
           options={{
             tabBarButton: () => null, // Esto oculta completamente el botón de la pestaña en el footer
 

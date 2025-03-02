@@ -1,92 +1,81 @@
-import React from 'react';
-import { View, Text, StyleSheet, FlatList, Image, TouchableOpacity } from 'react-native';
-import { useNavigation } from '@react-navigation/native'; // Importa useNavigation
+import React, { useEffect, useState } from 'react';
+import { View, Text, StyleSheet, FlatList, Image, TouchableOpacity, Platform } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
+import axios from 'axios'; // Asegúrate de tener instalado axios
 
+// Tipo de datos para las tarjetas
 interface CardData {
   id: number;
-  title: string;
-  businessName: string;
+  nombre: string;
+  direccion: string;
+  imagen: string[]; // Asumiendo que 'imagen' es un array de strings
+  tipo: string;
   rating: number;
-  type: string;
-  address: string;
-  image: string;
 }
 
-const recentlyViewedData: CardData[] = [
-  {
-    id: 1,
-    title: 'Recientemente Visto',
-    businessName: 'Glow Beauty Studio',
-    rating: 4.8,
-    type: 'Salón de Belleza',
-    address: 'Av. Reforma 123, Ciudad X',
-    image: 'https://images.fresha.com/locations/location-profile-images/806268/940973/ad801920-3200-4c6d-889e-c91c13b043c2.jpg?class=venue-gallery-large',
-  },
-  {
-    id: 2,
-    title: 'Recientemente Visto',
-    businessName: 'Elite Barber Club',
-    rating: 4.2,
-    type: 'Barbería',
-    address: 'Calle Palma 456, Ciudad Y',
-    image: 'https://www.scalperstudio.com/wp-content/uploads/2022/03/sucursal-polanco-scalper-studio-barberia-cdmx.jpg',
-  },
-  {
-    id: 3,
-    title: 'Recientemente Visto',
-    businessName: 'Lash & Brow Studio',
-    rating: 4.9,
-    type: 'Cejas y Pestañas',
-    address: 'Plaza Dorada 789, Ciudad Z',
-    image: 'https://i.pinimg.com/236x/c8/23/0f/c8230f6a01863c76cd2ce4628837addd.jpg',
-  },
-];
-
+// Define la navegación
 type RootStackParamList = {
-  Details: undefined; // Define the parameters for the Details screen if any
+  Details: { idBussiness: number };
 };
 
 const RecentlyViewedCarousel = () => {
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
+  const [businessData, setBusinessData] = useState<CardData[]>([]);
+
+  // Obtener los datos del backend
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const response = await axios.get<{ data: CardData[] }>('https://panel-estudio-production.up.railway.app/api/all-bussiness');
+        setBusinessData(response.data.data); // Ajusta al formato de respuesta
+      } catch (error) {
+        console.error('Error al obtener los negocios:', error);
+      }
+    };
+    fetchData();
+  }, []);
 
   // Función para navegar a la pantalla 'Details'
-  const goDetails = () => {
-    navigation.navigate('Details'); // Navega a la pantalla Details
+  const goDetails = (id: number) => {
+    navigation.navigate('Details', { idBussiness: id });
   };
 
+  // Renderizar cada tarjeta
   const renderItem = ({ item }: { item: CardData }) => (
-       <TouchableOpacity style={styles.card} onPress={goDetails}> {/* Envolvemos con TouchableOpacity */}
-   
-      <Image source={{ uri: item.image }} style={styles.cardImage} />
+    <TouchableOpacity style={styles.card} onPress={() => goDetails(item.id)}>
+      <Image source={{ uri: item?.imagen[0] }} style={styles.cardImage} />
       <View style={styles.cardContent}>
         <Text style={styles.cardTitle} numberOfLines={1} ellipsizeMode="tail">
-          {item.businessName}
+          {item.nombre}
         </Text>
-        <Text style={styles.cardRating}>⭐ {item.rating}</Text>
-        <Text style={styles.cardAddress}>{item.address}</Text>
-        <Text style={styles.cardSubtitle}>{item.type}</Text>
+        {/* <Text style={styles.cardRating}>{item.rating}</Text> */}
+        <Text style={styles.cardAddress}>{item.direccion}</Text>
+        <Text style={styles.cardSubtitle}>{item.tipo}</Text>
       </View>
     </TouchableOpacity>
   );
+
   return (
     <View style={styles.carouselContainer}>
-      <Text style={styles.sectionTitle}>Recientemente Vistos</Text>
+      <Text style={styles.sectionTitle}>Compartir tiempo</Text>
       <FlatList
-        data={recentlyViewedData}
+        data={businessData}
         renderItem={renderItem}
         keyExtractor={(item) => item.id.toString()}
         horizontal
         showsHorizontalScrollIndicator={false}
         snapToAlignment="center"
         decelerationRate="fast"
-        snapToInterval={260} // Ajustado para alineación precisa
+        snapToInterval={260}
+        pagingEnabled // ← Esta línea ayuda a mantener la misma experiencia en ambas plataformas
         contentContainerStyle={styles.flatListContent}
       />
     </View>
   );
 };
 
+// Estilos
 const styles = StyleSheet.create({
   carouselContainer: {
     marginTop: 20,
@@ -137,7 +126,7 @@ const styles = StyleSheet.create({
   },
   cardSubtitle: {
     fontSize: 13,
-    paddingVertical: 4,
+    paddingVertical: 10,
     paddingHorizontal: 10,
     backgroundColor: '#f2f2f2',
     borderRadius: 6,

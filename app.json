@@ -31,14 +31,15 @@
     },
     "extra": {
       "eas": {
-        "projectId": "2c75461b-6d64-4c01-a5b1-2ff87a8f26d5"
+        "projectId": "ca20957f-9924-4117-b6d0-d48114ebfa2b"
       }
     },
     "runtimeVersion": {
       "policy": "appVersion"
     },
     "updates": {
-      "url": "https://u.expo.dev/2c75461b-6d64-4c01-a5b1-2ff87a8f26d5"
-    }
+      "url": "https://u.expo.dev/ca20957f-9924-4117-b6d0-d48114ebfa2b"
+    },
+    "owner": "ariel-alegre"
   }
 }
