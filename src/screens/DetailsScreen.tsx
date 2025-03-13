@@ -1,10 +1,13 @@
 import React, { useState, useEffect } from "react";
-import { View, Text, Image, TouchableOpacity, ScrollView, Animated } from "react-native";
+import { View, Text, Image, TouchableOpacity, ScrollView, FlatList, Modal } from "react-native";
+
 import MapView, { Marker } from 'react-native-maps';
 import Icon from "react-native-vector-icons/Ionicons";
 import { useNavigation } from "@react-navigation/native"; // Importa useNavigation
 import axios from 'axios'; // Asegúrate de tener instalado axios
 import { useRoute } from "@react-navigation/native";
+import { Calendar, DateData } from 'react-native-calendars';
+
 interface CardData {
   id: string;
   nombre: string;
@@ -14,9 +17,16 @@ interface CardData {
   precios: Array<{ categoria: string, servicio: string, precio: string }>; // O precios: { categoria: string }[]
   rating: number;
   horario: Array<{ apertura: string, cierre:string, dia:string, estado: string }>
-  teams: Array<{ imagen: string, nombre: string, puesto: string }>
-}
+  Employees: Array<{ avatar: string, name: string, lastName: string, position: string }>
 
+  
+}
+interface Employee {
+  avatar: string;
+  name: string;
+  lastName: string;
+  position: string;
+}
 const SalonDetails = () => {
   const route = useRoute();
   const { idBussiness } = route.params as { idBussiness: string };
@@ -24,6 +34,15 @@ const SalonDetails = () => {
   const [selectedCategory, setSelectedCategory] = useState("Destacados");
   const navigation = useNavigation(); // Obtén el objeto de navegación
   const [businessDetails, setBusinessDetails] = useState<CardData | null>(null); // Cambié esto a null inicialmente
+     const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
+    const [showEmployeesModal, setShowEmployeesModal] = useState(false);
+    const [showCalendarModal, setShowCalendarModal] = useState(false);
+    const [showTimeModal, setShowTimeModal] = useState(false); // Modal para horarios
+    const [selectedDate, setSelectedDate] = useState<string | null>(null);
+    const [availableHours, setAvailableHours] = useState<string[]>([]);
+    const [selectedHour, setSelectedHour] = useState<string | null>(null);
+  
+  
   console.log(businessDetails);
 
   const goBack = () => {
@@ -32,7 +51,7 @@ const SalonDetails = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const response = await axios.get(`https://panel-estudio-production.up.railway.app/api/one-bussiness/${idBussiness}`);
+        const response = await axios.get(`http://192.168.2.111:3001/api/one-bussiness/${idBussiness}`);
         setBusinessDetails(response.data.data); // Aquí actualizas el estado con el negocio obtenido
       } catch (error) {
         console.error('Error al obtener los negocios:', error);
@@ -52,42 +71,59 @@ const SalonDetails = () => {
     ); // Muestra un mensaje mientras esperas la respuesta
   }
 
-  const handleShare = () => {
-    console.log("Compartir");
-    // Aquí puedes implementar la lógica para compartir el contenido
-  };
-
-  const handleFavorite = () => {
-    console.log("Añadir a favoritos");
-    // Aquí puedes implementar la lógica para añadir a favoritos
-  };
-
-  // Servicios según la categoría seleccionada
-
-
-
-  // Equipo del salón
-  const teamMembers = [
-    { name: "Ana Pérez", role: "Estilista", image: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRcUef7cWD3uLU_G3k7Zbab66K4XFHObja2kw&s" },
-    { name: "Carlos Gómez", role: "Barbero", image: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRcUef7cWD3uLU_G3k7Zbab66K4XFHObja2kw&s" },
-    { name: "María Torres", role: "Maquilladora", image: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRcUef7cWD3uLU_G3k7Zbab66K4XFHObja2kw&s" },
-  ];
-  const reviews = [
-    { name: "Ana López", rating: 5, comment: "Excelente servicio y atención. ¡Volveré!", image: "https://randomuser.me/api/portraits/women/1.jpg" },
-    { name: "Carlos Pérez", rating: 4, comment: "Muy buen lugar, aunque podría mejorar un poco el ambiente.", image: "https://randomuser.me/api/portraits/men/2.jpg" },
-    { name: "María Rodríguez", rating: 5, comment: "Los mejores en lo que hacen. Súper recomendados.", image: "https://randomuser.me/api/portraits/women/3.jpg" },
-    { name: "Jorge Fernández", rating: 3, comment: "El servicio fue bueno, pero hubo demora en la atención.", image: "https://randomuser.me/api/portraits/men/4.jpg" }
-  ];
-  const horarios = [
-    { dia: 'Lunes', abierto: true, hora: '9:00 AM - 10:00 PM' },
-    { dia: 'Martes', abierto: true, hora: '9:00 AM - 10:00 PM' },
-    { dia: 'Miércoles', abierto: true, hora: '9:00 AM - 10:00 PM' },
-    { dia: 'Jueves', abierto: true, hora: '9:00 AM - 10:00 PM' },
-    { dia: 'Viernes', abierto: true, hora: '9:00 AM - 10:00 PM' },
-    { dia: 'Sábado', abierto: false, hora: '10:00 AM - 12:00 AM' },
-    { dia: 'Domingo', abierto: false, hora: 'Cerrado' },
-  ];
-
+ const handleReserve = () => {
+     setShowEmployeesModal(true); // Mostrar modal de empleados
+     setShowCalendarModal(false); // Ocultar modal de calendario
+     setAvailableHours([]); // Limpiar horarios disponibles
+   };
+ 
+   const selectEmployee = (employee: Employee) => {
+     setSelectedEmployee(employee);
+     setShowEmployeesModal(false); // Cerrar modal de empleados
+     setShowCalendarModal(true); // Mostrar modal de calendario
+   };
+ 
+   const onDayPress = (day: DateData) => {
+     setSelectedDate(day.dateString);
+     setSelectedHour(null); // Reiniciar selección de horario
+     
+     // Obtener el día de la semana seleccionado
+     const dayOfWeek = new Date(day.dateString).getDay();
+     const weekDays = ["domingo", "lunes", "martes", "miércoles", "jueves", "viernes", "sábado"];
+     const selectedDay = weekDays[dayOfWeek];
+ 
+     // Buscar el horario correspondiente
+     const businessDay = businessDetails.horario.find(h => h.dia.toLowerCase() === selectedDay.toLowerCase());
+ 
+     if (businessDay && businessDay.estado.toLowerCase() === "abierto") {
+       const hours = generateAvailableHours(businessDay.apertura, businessDay.cierre);
+       setAvailableHours(hours);
+       setShowTimeModal(true); // Mostrar modal de horarios
+     } else {
+       setAvailableHours([]);
+     }
+ 
+     // Cerrar el modal de calendario después de seleccionar una fecha
+     setShowCalendarModal(false);
+   };
+ 
+   const generateAvailableHours = (start: string, end: string) => {
+     let times = [];
+     let [startHour, startMinute] = start.split(":").map(Number);
+     let [endHour, endMinute] = end.split(":").map(Number);
+ 
+     while (startHour < endHour || (startHour === endHour && startMinute < endMinute)) {
+       let formattedHour = `${String(startHour).padStart(2, "0")}:${String(startMinute).padStart(2, "0")}`;
+       times.push(formattedHour);
+ 
+       startMinute += 30; // Intervalo de 30 minutos
+       if (startMinute >= 60) {
+         startMinute = 0;
+         startHour += 1;
+       }
+     }
+     return times;
+   };
   const region = {
     latitude: 40.748817, // Latitud de ejemplo (cambia esto por la ubicación real)
     longitude: -73.985428, // Longitud de ejemplo (cambia esto por la ubicación real)
@@ -209,12 +245,107 @@ const SalonDetails = () => {
               <Text style={{ fontSize: 14, color: "black", marginTop: 5 }}>desde ${service.precio}</Text>
             </View>
             <TouchableOpacity >
-              <Text style={{ color: "white", backgroundColor: "black", padding: 10, borderRadius: 5 }}>Reservar</Text>
+              <Text style={{ color: "white", backgroundColor: "black", padding: 10, borderRadius: 5 }} onPress={handleReserve}  >Reservar</Text>
             </TouchableOpacity>
           </View>
         ))}
       </View>
 
+      {/* Sección de modal */}
+
+   <Modal
+        visible={showEmployeesModal}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setShowEmployeesModal(false)}
+      >
+        <View style={{ flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: 'rgba(0, 0, 0, 0.5)' }}>
+          <View style={{ width: 300, backgroundColor: "white", padding: 20, borderRadius: 10 }}>
+            <Text style={{ fontSize: 18, fontWeight: "bold", marginBottom: 10 }}>Selecciona un empleado</Text>
+            <FlatList
+              data={businessDetails.Employees}
+              keyExtractor={(item, index) => index.toString()}
+              renderItem={({ item }) => (
+                <TouchableOpacity
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    padding: 10,
+                    borderBottomWidth: 1,
+                    borderColor: "#ccc",
+                  }}
+                  onPress={() => selectEmployee(item)}
+                >
+                  <Image
+                    source={{ uri: item.avatar }}
+                    style={{ width: 50, height: 50, borderRadius: 25, marginRight: 10 }}
+                  />
+                  <View>
+                    <Text style={{ fontSize: 16, fontWeight: "bold" }}>{item.name} {item.lastName}</Text>
+                    <Text style={{ fontSize: 14, color: "gray" }}>{item.position}</Text>
+                  </View>
+                </TouchableOpacity>
+              )}
+            />
+          </View>
+        </View>
+      </Modal>
+
+      {/* Modal de calendario */}
+      <Modal
+        visible={showCalendarModal}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setShowCalendarModal(false)}
+      >
+        <View style={{ flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: 'rgba(0, 0, 0, 0.5)' }}>
+          <View style={{ width: 300, backgroundColor: "white", padding: 20, borderRadius: 10 }}>
+            <Text style={{ fontSize: 18, fontWeight: "bold", marginBottom: 10 }}>
+              Selecciona una fecha para tu cita con {selectedEmployee?.name}
+            </Text>
+            <Calendar
+              onDayPress={onDayPress}
+              markedDates={selectedDate ? { [selectedDate]: { selected: true, selectedColor: "black" } } : {}}
+            />
+          </View>
+        </View>
+      </Modal>
+
+      {/* Modal de selección de horario */}
+      <Modal
+        visible={showTimeModal}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setShowTimeModal(false)}
+      >
+        <View style={{ flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: 'rgba(0, 0, 0, 0.5)' }}>
+          <View style={{ width: 300, backgroundColor: "white", padding: 20, borderRadius: 10 }}>
+            <Text style={{ fontSize: 18, fontWeight: "bold", marginBottom: 10 }}>Selecciona un horario</Text>
+            {availableHours.length > 0 ? (
+              <FlatList
+                data={availableHours}
+                keyExtractor={(item, index) => index.toString()}
+                numColumns={3}
+                renderItem={({ item }) => (
+                  <TouchableOpacity
+                    style={{
+                      padding: 10,
+                      margin: 5,
+                      borderRadius: 8,
+                      backgroundColor: selectedHour === item ? "black" : "#ccc",
+                    }}
+                    onPress={() => setSelectedHour(item)}
+                  >
+                    <Text style={{ color: selectedHour === item ? "white" : "black" }}>{item}</Text>
+                  </TouchableOpacity>
+                )}
+              />
+            ) : (
+              <Text style={{ fontSize: 16, color: "red" }}>No hay horarios disponibles para este día.</Text>
+            )}
+          </View>
+        </View>
+      </Modal>
       {/* Sección de equipo */}
       <View style={{ paddingHorizontal: 20, marginTop: 20 }}>
         <View style={{ flexDirection: "row", flexWrap: "wrap", justifyContent: "space-between" }}>
@@ -222,7 +353,7 @@ const SalonDetails = () => {
 
           <Text style={{ fontSize: 18, fontWeight: "bold", marginBottom: 10 }}>Nuestro Equipo</Text>
           {/* Botón Ver Todo */}
-          <TouchableOpacity
+      {/*     <TouchableOpacity
             style={{
               marginTop: 10,
               borderRadius: 10,
@@ -231,11 +362,11 @@ const SalonDetails = () => {
             onPress={() => console.log("Ver todo presionado")} // Aquí puedes abrir una pantalla nueva
           >
             <Text style={{ color: "black", fontSize: 16, textDecorationLine: "underline" }}>Ver Todo</Text>
-          </TouchableOpacity>
+          </TouchableOpacity> */}
         </View>
         {/* Contenedor en filas de 3 */}
         <View style={{ flexDirection: "row", flexWrap: "wrap", justifyContent: "space-between" }}>
-          {businessDetails.teams.slice(0, 6).map((member, index) => ( // Muestra solo los primeros 6
+          {businessDetails.Employees.slice(0, 6).map((member, index) => ( // Muestra solo los primeros 6
             <View
               key={index}
               style={{
@@ -247,11 +378,11 @@ const SalonDetails = () => {
               }}
             >
               <Image
-                source={{ uri: member.imagen }}
+                source={{ uri: member.avatar }}
                 style={{ width: 70, height: 70, borderRadius: 35, marginBottom: 5 }}
               />
-              <Text style={{ fontSize: 14, fontWeight: "bold", textAlign: "center" }}>{member.nombre}</Text>
-              <Text style={{ fontSize: 12, color: "gray", textAlign: "center" }}>{member.puesto}</Text>
+              <Text style={{ fontSize: 14, fontWeight: "bold", textAlign: "center" }}>{member.name} {member.lastName}</Text>
+              <Text style={{ fontSize: 12, color: "gray", textAlign: "center" }}>{member.position}</Text>
             </View>
           ))}
         </View>
@@ -259,61 +390,11 @@ const SalonDetails = () => {
 
       </View>
 
-      {/* Reseñas*/}
-      {/*
-<View style={{ paddingHorizontal: 20, marginTop: 20 }}>
-  <Text style={{ fontSize: 18, fontWeight: "bold", marginBottom: 10 }}>Reseñas</Text>
-
-  {/* Contenedor de reseñas en filas de 2 
-  <View style={{ flexDirection: "row", flexWrap: "wrap", justifyContent: "space-between" }}>
-    {reviews.slice(0, 4).map((review, index) => ( // Muestra solo las primeras 4
-      <View
-        key={index}
-        style={{
-          width: "48%",
-          padding: 10,
-          borderRadius: 10,
-          backgroundColor: "#f9f9f9",
-          marginBottom: 10,
-        }}
-      >
-        <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 5 }}>
-          <Image
-            source={{ uri: review.image }}
-            style={{ width: 40, height: 40, borderRadius: 20, marginRight: 8 }}
-          />
-          <View>
-            <Text style={{ fontSize: 14, fontWeight: "bold" }}>{review.name}</Text>
-            <Text style={{ fontSize: 12, color: "gray" }}>{'⭐'.repeat(review.rating)}</Text>
-          </View>
-        </View>
-        <Text style={{ fontSize: 12, color: "black" }} numberOfLines={3}>{review.comment}</Text>
-      </View>
-    ))}
-  </View> */}
-
-      {/* Botón Ver Todo */}
-      {/* <TouchableOpacity
-  style={{
-    marginTop: 10,
-    backgroundColor: "white",  // Fondo blanco
-    padding: 12,
-    borderRadius: 10,
-    alignItems: "center",
-    borderWidth: 0.5,  // Borde de 2 píxeles
-    borderColor: "black"  // Color del borde negro
-  }}
-  onPress={() => console.log("Ver todas las reseñas")} // Aquí puedes abrir una pantalla nueva
->
-  <Text style={{ color: "black", fontSize: 16, fontWeight: "bold" }}>Ver todo</Text>
-</TouchableOpacity>
-</View>
- */}
       <View style={{ paddingHorizontal: 20, marginTop: 20 }}>
         <Text style={{ fontSize: 18, fontWeight: "bold", marginBottom: 10 }}>Horarios de Apertura</Text>
 
         {businessDetails.horario.map((horarios, index) => (
-          <View key={index} style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 10 }}>
+          <View key={index} style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 5 }}>
             <Text style={{ fontSize: 16, color: 'black', flex: 1, }}>
             
             {horarios.dia}: {horarios.apertura} AM - {horarios.cierre} PM
@@ -353,6 +434,7 @@ const SalonDetails = () => {
           <Marker coordinate={region} title="Restaurante" description="Aquí estamos." />
         </MapView>
       </View>
+      
       {/* Botón de reservar */}
       <View style={{ padding: 20 }}>
         <TouchableOpacity

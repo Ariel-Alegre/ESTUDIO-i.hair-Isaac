@@ -27,7 +27,7 @@ const RecentlyViewedCarousel = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const response = await axios.get<{ data: CardData[] }>('https://panel-estudio-production.up.railway.app/api/all-bussiness');
+        const response = await axios.get<{ data: CardData[] }>('http://192.168.2.111:3001/api/all-bussiness');
         setBusinessData(response.data.data); // Ajusta al formato de respuesta
       } catch (error) {
         console.error('Error al obtener los negocios:', error);
